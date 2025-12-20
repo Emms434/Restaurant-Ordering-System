@@ -18,5 +18,8 @@ public class Item {
 
     }
 
+    public double getPrice() {
+            return Price;
+    }
 }
 

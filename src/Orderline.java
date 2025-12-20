@@ -1,15 +1,19 @@
 public class Orderline {
     int quantity;
     Item item;
+
     public Orderline(int quantity, Item item) {
         this.quantity = quantity;
         this.item = item;
     }
 
-    public void increaseQuantity(int quantity) {
-        this.quantity +=1 ;
+    public double getSubtotal() {
+        return item.getPrice() * quantity;
     }
-    public void decreaseQuantity(int quantity) {
-        this.quantity -=1 ;
-    }
+    public void increaseQuantity(){
+        this.quantity++;
+    };
+    public void decreaseQuantity(){
+        if(this.quantity > 0)  this.quantity--;
+    };
 }
