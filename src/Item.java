@@ -1,3 +1,5 @@
+import java.util.Objects;
+
 public class Item {
         String Name;
         Double Price;
@@ -9,8 +11,21 @@ public class Item {
             this.Description = Description;
             this.Price = Price;
 
+        }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;          // same object
+        if (o == null) return false;
+        if (getClass() != o.getClass()) return false;
 
+        Item item = (Item) o;
+        return Objects.equals(Name, item.Name);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(Name);
     }
 
     public String toString(){
@@ -20,6 +35,13 @@ public class Item {
 
     public double getPrice() {
             return Price;
+    }
+
+    public void setName(String name){
+        this.Name = name;
+    }
+    public String getName(){
+        return Name;
     }
 }
 
