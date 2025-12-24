@@ -1,84 +1,70 @@
 import java.util.HashMap;
+
 public class Order {
 
-    //Hashmap to store list of customer orders
-    Menu menu;
-    HashMap<Item, Integer>  newOrder = new HashMap<>();
+    private Menu menu;
+    private HashMap<Item, Orderline> orderlines;
 
     public Order(Menu menu) {
         this.menu = menu;
-        this.newOrder = new HashMap<>();
+        this.orderlines = new HashMap<>();
     }
 
-    //Use FindItem to get the Item from Menu
-
-
+    // Add item by name
     public void addItem(String itemName) {
-        Item itemfound = menu.FindItem(itemName);
-        if (itemfound == null) {
+        Item itemFound = menu.FindItem(itemName);
+
+        if (itemFound == null) {
             System.out.println("Item not found");
+            return;
+        }
 
+        if (orderlines.containsKey(itemFound)) {
+            Orderline line = orderlines.get(itemFound);
+            line.increaseQuantity();
         } else {
-            if (newOrder.containsKey(itemfound)) {
-                int quantity = newOrder.get(itemfound);
-                newOrder.put(itemfound, quantity + 1);
-            }
-            else {
-                newOrder.put(itemfound, 1);
-            }
-
+            orderlines.put(itemFound, new Orderline(1, itemFound));
         }
     }
 
+    // Remove item by name
     public void removeItem(String itemName) {
-        Item itemfound = menu.FindItem(itemName);
-        if (itemfound != null) {
-            int quantity = newOrder.get(itemfound);
-            if (quantity > 1) {
-                newOrder.put(itemfound, quantity - 1);
-            }
-            else {
-                newOrder.remove(itemfound);
-            }
+        Item itemFound = menu.FindItem(itemName);
 
-
-            System.out.println(itemName + " has been removed");
+        if (itemFound == null || !orderlines.containsKey(itemFound)) {
+            System.out.println("Item not in order");
+            return;
         }
+
+        Orderline line = orderlines.get(itemFound);
+        line.decreaseQuantity();
+
+        if (line.getQuantity() == 0) {
+            orderlines.remove(itemFound);
+        }
+
+        System.out.println(itemName + " has been removed");
     }
 
-    public double CalculateTotal() {
+    // Calculate total order price
+    public double calculateTotal() {
         double total = 0;
-        for(Item item : newOrder.keySet()) {
-            double subtotal = item.Price *  newOrder.get(item);
-            total += subtotal;
+
+        for (Orderline line : orderlines.values()) {
+            total += line.getSubtotal();
         }
+
         return total;
     }
 
+    // Print order summary
     public void printOrder() {
         System.out.println("----- Customer Order -----");
 
-        for (Item item : newOrder.keySet()) {
-            int quantity = newOrder.get(item);
-            double subtotal = item.Price * quantity;
-            System.out.printf("%s (%s) x%d - $%.2f%n", item.Name, item.Description, quantity, subtotal);
+        for (Orderline line : orderlines.values()) {
+            System.out.println(line);
         }
 
-        double total = CalculateTotal();
-        System.out.printf("Total Order Price: $%.2f%n", total);
+        System.out.printf("Total Order Price: $%.2f%n", calculateTotal());
     }
-
-
-
-
-
-    //addItem(Item item) → add an item to the order.
-        //removeItem(Item item) → optional, remove if the customer changes their mind.
-        //calculateTotal() → sum up all item prices.
-        //printOrder() → display each item using toString() and show total price
-
-
-
 }
-
-
