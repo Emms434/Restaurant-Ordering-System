@@ -7,6 +7,10 @@ public class Orderline {
         this.item = item;
     }
 
+    public int getQuantity() {
+        return quantity;
+    }
+
     public double getSubtotal() {
         return item.getPrice() * quantity;
     }
@@ -16,4 +20,9 @@ public class Orderline {
     public void decreaseQuantity(){
         if(this.quantity > 0)  this.quantity--;
     };
+    @Override
+    public String toString() {
+        return item.getName() + " x" + quantity + " - $" +
+                String.format("%.2f", getSubtotal());
+    }
 }

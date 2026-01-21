@@ -2,8 +2,8 @@ import java.util.HashMap;
 
 public class Order {
 
-    private Menu menu;
-    private HashMap<Item, Orderline> orderlines;
+    private final Menu menu;
+    private final HashMap<Item, Orderline> orderlines;
 
     public Order(Menu menu) {
         this.menu = menu;
