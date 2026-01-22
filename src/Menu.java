@@ -6,6 +6,7 @@ public class Menu {
     //Searching the menu arrayList for an item per request from customer
 
     public Item FindItem(String ItemName) {
+        ItemName = ItemName.toLowerCase();
         for (Item neworder : Menu){
             if(ItemName.equals(neworder.Name)){
                 return neworder;
