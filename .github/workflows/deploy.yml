@@ -1,0 +1,71 @@
+name: Deploy frontend and backend
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build backend
+        working-directory: ordering
+        run: mvn -B -DskipTests package
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Package Elastic Beanstalk bundle
+        run: |
+          mkdir -p deploy
+          cp ordering/target/ordering-0.0.1-SNAPSHOT.jar deploy/application.jar
+          cat > deploy/Procfile <<'PROCFILE'
+          web: java -jar application.jar
+          PROCFILE
+          cd deploy && zip -r ../backend-bundle.zip .
+      - name: Upload EB application version
+        run: |
+          aws s3 cp backend-bundle.zip s3://${{ secrets.EB_ARTIFACT_BUCKET }}/backend-bundle-${{ github.sha }}.zip
+          aws elasticbeanstalk create-application-version \
+            --application-name "${{ secrets.EB_APPLICATION_NAME }}" \
+            --version-label "${{ github.sha }}" \
+            --source-bundle S3Bucket=${{ secrets.EB_ARTIFACT_BUCKET }},S3Key=backend-bundle-${{ github.sha }}.zip
+      - name: Deploy to Elastic Beanstalk environment
+        run: |
+          aws elasticbeanstalk update-environment \
+            --environment-name "${{ secrets.EB_ENVIRONMENT_NAME }}" \
+            --version-label "${{ github.sha }}"
+
+  deploy-frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build frontend
+        working-directory: frontend
+        env:
+          VITE_API_BASE_URL: ${{ secrets.FRONTEND_API_BASE_URL }}
+        run: |
+          npm install
+          npm run build
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ secrets.AWS_REGION }}
+      - name: Sync static site to S3
+        run: aws s3 sync frontend/dist s3://${{ secrets.FRONTEND_S3_BUCKET }} --delete
+      - name: SPA routing fallback
+        run: aws s3 cp frontend/dist/index.html s3://${{ secrets.FRONTEND_S3_BUCKET }}/index.html
+      - name: Invalidate CloudFront
+        run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths '/*'

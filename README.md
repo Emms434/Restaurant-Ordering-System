@@ -1,22 +1,41 @@
 # Restaurant Ordering System
 
-## Overview
-This is a self-directed software project that simulates a basic restaurant ordering workflow.  
-The goal is to practice programming fundamentals, software design, and object-oriented concepts.
+Monorepo with:
+- `frontend/`: React + Vite SPA
+- `ordering/`: Spring Boot + Maven REST API
+- PostgreSQL persistence using Spring Data JPA + Flyway
 
-## Features
-- Create and modify customer orders
-- Process orders and calculate totals
-- Modular code structure for scalability and readability
+## REST API (kept stable and simple)
+- `GET /api/menu`
+- `POST /api/orders`
+- `GET /api/orders/{orderId}`
+- `POST /api/orders/{orderId}/items` body: `{ "itemName": "Burger" }`
+- `DELETE /api/orders/{orderId}/items` body: `{ "itemName": "Burger" }`
 
-## Technologies
-- C++ (or whatever language you used)
-- Object-Oriented Programming principles
-- Standard libraries for input/output and data handling
+## Local run (Docker Compose)
+```bash
+docker compose up --build
+```
+Frontend: http://localhost:5173  
+Backend: http://localhost:8080
 
-## Status
-- Work in progress
-- Continuously improving structure, readability, and functionality
+## Backend-only local run
+```bash
+cd ordering
+./mvnw spring-boot:run
+```
 
-## Purpose
-This project demonstrates my ability to independently design and implement software systems and apply programming concepts to real-world problems.
+## Frontend-only local run
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+## Migrations
+Flyway SQL migrations live in:
+- `ordering/src/main/resources/db/migration/V1__init_schema.sql`
+- `ordering/src/main/resources/db/migration/V2__seed_menu.sql`
+
+## Deployment
+See [`docs/aws-architecture.md`](docs/aws-architecture.md) and GitHub Actions workflow at `.github/workflows/deploy.yml`.
