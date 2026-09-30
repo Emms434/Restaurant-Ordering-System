@@ -2,6 +2,17 @@ package com.restaurant.ordering.model;
 
 import jakarta.persistence.*;
 
+/**
+ * One row of an order: "this menu item, this many times" (table order_lines).
+ *
+ * The unique constraint on (order_id, menu_item_id) means an item appears at
+ * most once per order; adding the same item again bumps the quantity instead
+ * of creating a duplicate line.
+ *
+ * The order side is LAZY (we always reach a line through its order anyway);
+ * the menu item side is loaded eagerly because every response needs the
+ * item's name and price.
+ */
 @Entity
 @Table(name = "order_lines", uniqueConstraints = {
         @UniqueConstraint(name = "uq_order_line_order_item", columnNames = {"order_id", "menu_item_id"})

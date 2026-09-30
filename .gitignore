@@ -27,3 +27,11 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+### IntelliJ project files ###
+.idea/
+*.iml
+
+### Build output ###
+target/
+node_modules/
+frontend/dist/
