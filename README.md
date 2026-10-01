@@ -8,7 +8,6 @@ A full-stack restaurant ordering app in a single repository.
 - `ordering/` — Spring Boot REST API (menu + order management).
 - `docker-compose.yml` — local multi-container setup (frontend, backend, postgres).
 - `docs/aws-architecture.md` — high-level deployment architecture notes.
-- `portfolio/` — personal developer portfolio site (Astro + Tailwind), deployed to GitHub Pages.
 
 ## Features
 
