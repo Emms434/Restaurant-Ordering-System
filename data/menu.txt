@@ -1,4 +1,0 @@
-Burger, 7.99
-Pizza, 10.50
-Fries, 3.50
-Coke, 1.99

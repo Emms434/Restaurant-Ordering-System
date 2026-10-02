@@ -1,3 +1,5 @@
+# Two-stage build: stage 1 compiles the JAR with Maven, stage 2 copies just the
+# JAR into a slim Java runtime image, so the final image has no build tools.
 FROM maven:3.9.9-eclipse-temurin-17 AS build
 WORKDIR /app
 COPY pom.xml .

@@ -1,158 +1,114 @@
 # Restaurant Ordering System
 
-A full-stack restaurant ordering app in a single repository.
+[![CI](https://github.com/Emms434/Restaurant-Ordering-System/actions/workflows/ci.yml/badge.svg)](https://github.com/Emms434/Restaurant-Ordering-System/actions/workflows/ci.yml)
 
-## Project structure
+A full-stack restaurant ordering app: customers browse a menu, start an order,
+add and remove dishes, and see a running total. It has a Spring Boot REST API,
+a PostgreSQL database with versioned migrations, and a React frontend, all
+runnable locally with one Docker Compose command.
 
-- `frontend/` — React + Vite single-page application (customer order UI).
-- `ordering/` — Spring Boot REST API (menu + order management).
-- `docker-compose.yml` — local multi-container setup (frontend, backend, postgres).
-- `docs/aws-architecture.md` — high-level deployment architecture notes.
+![Screenshot of the ordering UI](docs/screenshot.png)
 
-## Features
+## Tech stack
 
-- View menu items.
-- Create an order.
-- Add and remove items from an order.
-- Fetch an order by ID.
-- Persist data in PostgreSQL.
-- Database schema + seed data managed with Flyway migrations.
+| Layer | Technology |
+|---|---|
+| Backend | Java 17, Spring Boot 3 (Web, Data JPA, Validation) |
+| Database | PostgreSQL 16, Flyway migrations |
+| Frontend | React 18, Vite |
+| Testing | JUnit 5, Mockito, MockMvc, integration tests against real Postgres |
+| DevOps | Docker Compose, GitHub Actions (CI), AWS (Elastic Beanstalk, S3, CloudFront, RDS) |
 
-## API endpoints
+## How it works
+
+```text
+React (Vite)  --HTTP/JSON-->  OrderingController  -->  OrderingService  -->  JPA repositories  -->  PostgreSQL
+                                     |                        |
+                           ApiExceptionHandler        business rules: quantities,
+                           (errors -> JSON 404/400)   line totals, order total
+```
+
+- **Controller** (`controller/`) maps URLs to service calls and validates request bodies.
+- **Service** (`service/OrderingService`) holds the business logic. Adding an item
+  already on the order bumps its quantity, and removing the last unit deletes the line.
+  Totals are computed with `BigDecimal` so money stays exact.
+- **Entities** (`model/`) map to three tables: `menu_items`, `customer_orders`, `order_lines`.
+- **Flyway** (`resources/db/migration`) creates and seeds the schema on startup.
+  Hibernate only *validates* the schema and never changes it.
+- **DTOs** (`dto/`) define the JSON the API returns, kept separate from the entities.
+
+## API
 
 Base URL: `http://localhost:8080/api`
 
-- `GET /menu`
-- `POST /orders`
-- `GET /orders/{orderId}`
-- `POST /orders/{orderId}/items` with JSON body:
-  ```json
-  { "itemName": "Burger" }
-  ```
-- `DELETE /orders/{orderId}/items` with JSON body:
-  ```json
-  { "itemName": "Burger" }
-  ```
+| Method | Path | Body | Result |
+|---|---|---|---|
+| `GET` | `/menu` | – | All menu items, sorted by name |
+| `POST` | `/orders` | – | `201` new empty order |
+| `GET` | `/orders/{id}` | – | Order with lines and total |
+| `POST` | `/orders/{id}/items` | `{"itemName": "Burger"}` | Adds one; returns updated order |
+| `DELETE` | `/orders/{id}/items` | `{"itemName": "Burger"}` | Removes one; returns updated order |
 
-## Prerequisites
+Item names are case-insensitive. Unknown orders or items return `404` with
+`{"error": "..."}`, and a blank `itemName` returns `400`. `GET /health` returns `OK`.
 
-For local non-Docker setup:
+## Running locally
 
-- Java 17+ (project compiles for Java 17)
-- Maven 3.9+
-- Node.js 18+
-- npm 9+
-- PostgreSQL 16 (or Docker to run postgres)
-
-For Docker setup:
-
-- Docker + Docker Compose plugin
-
-## Quick start (recommended: Docker)
-
-From repo root:
+### With Docker (recommended)
 
 ```bash
 docker compose up --build
 ```
 
-Services:
-
 - Frontend: <http://localhost:5173>
 - Backend: <http://localhost:8080>
-- Postgres: `localhost:5432`
+- Postgres: `localhost:5432` (db/user/password: `restaurant`)
 
-To stop:
+Stop with `docker compose down` (add `-v` to also wipe the database).
+
+### Without Docker
+
+Requires Java 17+, Maven 3.9+, Node 18+, and a local PostgreSQL with a
+`restaurant` database and user (password `restaurant`).
 
 ```bash
-docker compose down
+# Backend
+cd ordering && mvn spring-boot:run
+
+# Frontend (in another terminal)
+cd frontend && npm install && npm run dev
 ```
 
-To stop and remove DB volume:
-
-```bash
-docker compose down -v
-```
-
-## Run without Docker
-
-### 1) Start PostgreSQL
-
-Create database/user if needed:
-
-- DB: `restaurant`
-- User: `restaurant`
-- Password: `restaurant`
-
-### 2) Run backend
+## Tests
 
 ```bash
 cd ordering
-./mvnw spring-boot:run
+mvn test
 ```
 
-If you do not want to use the Maven wrapper:
+| Suite | What it covers | Needs a database? |
+|---|---|---|
+| `OrderingServiceTest` | Business rules: quantities, line removal, totals, not-found errors | No (Mockito) |
+| `OrderingControllerTest` | HTTP layer: routes, status codes, validation, error JSON, CORS | No (`@WebMvcTest`) |
+| `OrderingApiIntegrationTest` | Full request -> database round trips, including Flyway seed data | Yes (Postgres) |
 
-```bash
-cd ordering
-mvn spring-boot:run
-```
+The integration tests use the same connection settings as the app (defaults
+to `localhost:5432/restaurant`, or override with `SPRING_DATASOURCE_*`). Start the
+database with `docker compose up -d postgres` first.
 
-### 3) Run frontend
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-## Build commands
-
-Backend package build:
-
-```bash
-cd ordering
-./mvnw clean package
-```
-
-Frontend production build:
-
-```bash
-cd frontend
-npm run build
-```
-
-## Why your backend build may fail
-
-A common failure in this project is Maven being unable to download dependencies or the parent POM from Maven Central (for example, HTTP `403 Forbidden` or wrapper download failures). This typically looks like:
-
-- `Non-resolvable parent POM ... spring-boot-starter-parent ... status code: 403`
-- `wget: Failed to fetch ... apache-maven-...-bin.zip`
-
-### Root cause
-
-The backend depends on external Maven artifacts from:
-
-- `https://repo.maven.apache.org/maven2`
-
-If your machine or network blocks that host (corporate proxy, firewall, DNS filtering, or temporary upstream issue), backend builds fail before compilation starts.
-
-### Fix options
-
-1. Ensure Maven Central is reachable from your environment.
-2. Configure Maven proxy settings in `~/.m2/settings.xml`.
-3. If your company uses an internal artifact mirror (Nexus/Artifactory), configure it as a Maven mirror in `settings.xml`.
-4. Retry with system Maven (`mvn ...`) if wrapper bootstrap is blocked.
-5. In CI or restricted environments, pre-cache dependencies or use an allowed internal registry.
-
-## Flyway migrations
-
-- `ordering/src/main/resources/db/migration/V1__init_schema.sql`
-- `ordering/src/main/resources/db/migration/V2__seed_menu.sql`
+GitHub Actions runs the full suite against a Postgres service container on
+every push and pull request (`.github/workflows/ci.yml`), then builds the frontend.
 
 ## Deployment
 
-See:
+`.github/workflows/deploy.yml` builds the backend JAR and deploys it to AWS
+Elastic Beanstalk, then uploads the frontend build to S3 and invalidates
+CloudFront. Run it manually from the **Actions** tab after adding the AWS secrets
+it references. See [`docs/aws-architecture.md`](docs/aws-architecture.md) for
+the target architecture.
 
-- `docs/aws-architecture.md`
-- `.github/workflows/deploy.yml`
+## Troubleshooting
+
+**`Non-resolvable parent POM ... status code: 403`** means Maven can't reach
+Maven Central (`repo.maven.apache.org`). This is usually a firewall or proxy.
+Configure a proxy or mirror in `~/.m2/settings.xml`, or try from another network.

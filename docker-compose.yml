@@ -1,3 +1,7 @@
+# Runs the whole stack locally with `docker compose up --build`:
+#   postgres  - database (data kept in the postgres_data volume)
+#   backend   - Spring Boot API on :8080, pointed at the postgres service by hostname
+#   frontend  - Vite dev server on :5173, calling the backend's /api
 version: '3.9'
 services:
   postgres:

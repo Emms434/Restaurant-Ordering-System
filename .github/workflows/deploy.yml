@@ -1,8 +1,12 @@
+# Deploys the backend to Elastic Beanstalk and the frontend to S3 + CloudFront.
+# Run it manually from the Actions tab ("Run workflow") once the AWS secrets
+# below are configured under Settings -> Secrets and variables -> Actions.
+# It no longer runs on every push, so main isn't marked failing when AWS
+# isn't set up; ci.yml handles build + test on each push.
 name: Deploy frontend and backend
 
 on:
-  push:
-    branches: ["main"]
+  workflow_dispatch:
 
 jobs:
   deploy-backend:

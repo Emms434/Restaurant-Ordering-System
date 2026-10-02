@@ -3,6 +3,13 @@ package com.restaurant.ordering.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 
+/**
+ * A dish on the menu (table menu_items). Rows are created by the Flyway seed
+ * migration (V2__seed_menu.sql), not through the API.
+ *
+ * Names are unique so customers can order by name, and price is a
+ * NUMERIC(10,2) mapped to BigDecimal to keep money exact.
+ */
 @Entity
 @Table(name = "menu_items")
 public class MenuItem {

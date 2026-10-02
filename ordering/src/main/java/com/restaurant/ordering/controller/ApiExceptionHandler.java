@@ -9,6 +9,16 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.util.Map;
 
+/**
+ * Central error handling for every controller. Instead of each endpoint
+ * catching exceptions, the service just throws, and this class turns the
+ * exception into a clean JSON error: {"error": "..."}.
+ *
+ *  - EntityNotFoundException (unknown order, unknown item, item not in
+ *    order) -> 404 Not Found
+ *  - MethodArgumentNotValidException (request body failed @Valid, e.g. a
+ *    blank itemName) -> 400 Bad Request
+ */
 @RestControllerAdvice
 public class ApiExceptionHandler {
     @ExceptionHandler(EntityNotFoundException.class)
